@@ -1,4 +1,4 @@
-host = '10.10.30.194'
-port = '55000'
-password = 'wazuh'
-username = 'wazuh'
+dev_host = '192.168.43.198'
+dev_port = '55000'
+dev_password = 'wazuh'
+dev_username = 'wazuh'

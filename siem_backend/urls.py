@@ -13,11 +13,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from cgi import test
 from django.contrib import admin
+
+from siem_backend.test import return_token 
 from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('token/', return_token),
     path('agents/',include('agents.urls')),
     path('integrity_monitoring/',include('integrity_monitoring.urls')),
     path('security_events/',include('security_events.urls')),
