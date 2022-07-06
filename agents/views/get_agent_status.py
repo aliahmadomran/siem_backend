@@ -7,7 +7,7 @@ from ..controllers.get_agent_status import *
 @api_view(['GET'])
 def get_agent_status(request):
     try : 
-        responce = get_agent_status()
+        responce = get_agent_status_controller()
         return JsonResponse(responce, status=status.HTTP_200_OK)
 
     except:
