@@ -9,7 +9,7 @@ def get_all_agent(request):
     try : 
         params = request.query_params
         responce = get_all_agents_controller(params)
-        return JsonResponse(responce, status=status.HTTP_200_OK)
+        return JsonResponse(responce, safe=False, status=status.HTTP_200_OK)
 
     except:
         return JsonResponse({"error message":"internal server error "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

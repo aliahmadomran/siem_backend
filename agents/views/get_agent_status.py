@@ -8,7 +8,7 @@ from ..controllers.get_agent_status import *
 def get_agent_status(request):
     try : 
         responce = get_agent_status_controller()
-        return JsonResponse(responce, status=status.HTTP_200_OK)
+        return JsonResponse(responce, safe=False, status=status.HTTP_200_OK)
 
     except:
         return JsonResponse({"error message":"internal server error "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
