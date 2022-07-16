@@ -1,4 +1,6 @@
 import datetime
+
+from siem_apis import siemRequest
 class ElasticQuery():
     def __init__(self):
         self.query = {}
@@ -96,3 +98,23 @@ requestJ = {
 }
 
 obj.queryBuilder(requestJson=requestJ)
+# from siem_backend.dev import *
+js = {
+    "size": 100,
+    "sort": [
+        {
+            "date": {
+                "order": "asc"
+            }
+        }
+    ]
+}
+end_point = '/wazuh-alerts-*/_search?pretty=true'
+data = siemRequest(protocol='https',host='192.168.42.198',port=9200,username='wazuh',password='wazuh',request_type = 'get',api_endpoint =end_point , body=js)
+# siemRequest(host=dev_host,username=dev_username,password=dev_password,api_endpoint=endd_point)
+data = data.json()
+# elasticUrl + "/wazuh-alerts-*/_search?pretty=true",
+#                     HttpMethod.POST,
+#                     entity,
+#                     Object.class
+# https://192.168.43.198:9200/

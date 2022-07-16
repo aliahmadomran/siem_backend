@@ -1,5 +1,3 @@
-
-
 from siem_backend.dev import *
 from network.siem_apis import siemRequest
 

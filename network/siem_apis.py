@@ -1,8 +1,9 @@
+from email.quoprimime import body_check
 import json
 import requests
 import urllib3
 from base64 import b64encode
-
+import json
 def getToken(protocol='https',host='localhost',port=55000,username='',password='',login_endpoint= 'security/user/authenticate'):
     # Disable insecure https warnings (for self-signed SSL certificates)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -10,7 +11,7 @@ def getToken(protocol='https',host='localhost',port=55000,username='',password='
     # Configuration
     protocol = protocol
     host = host
-    port = port
+    port = 55000
     username = username
     password = password
     login_endpoint = login_endpoint
@@ -27,7 +28,7 @@ def getToken(protocol='https',host='localhost',port=55000,username='',password='
     return token
 
 
-def siemRequest(protocol='https',host='localhost',port=55000,username='',password='',request_type = 'get',api_endpoint =''):
+def siemRequest(protocol='https',host='localhost',port=55000,username='',password='',request_type = 'get',api_endpoint ='',body={}):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     token = getToken(protocol=protocol,host=host,port=port,username=username,password=password)
@@ -38,8 +39,24 @@ def siemRequest(protocol='https',host='localhost',port=55000,username='',passwor
 
     if request_type == 'get':
         response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, verify=False)
-    
+    if body != {}:
+        jsonReq = json.dumps(body)
+        response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, data=jsonReq,verify=False)
+        
     return response
+
+# def elasticRequest(protocol='https',host='localhost',port=9200,username='',password='',request_type = 'get',api_endpoint ='',):
+#     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+#     userpass = username + ':' + password
+
+#     # New authorization header with the JWT token we got
+#     requests_headers = {'Content-Type': 'application/json',
+#                         'Authorization': f'Basic {b64encode(basic_auth).decode()}'}
+
+#     if request_type == 'get':
+#         response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, verify=False)
+    
+#     return response
 
 
 def getApiInfo(protocol='https',host='localhost',port=55000,username='',password=''):
