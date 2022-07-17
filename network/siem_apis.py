@@ -11,7 +11,7 @@ def getToken(protocol='https',host='localhost',port=55000,username='',password='
     # Configuration
     protocol = protocol
     host = host
-    port = 55000
+    port = port
     username = username
     password = password
     login_endpoint = login_endpoint
@@ -39,24 +39,8 @@ def siemRequest(protocol='https',host='localhost',port=55000,username='',passwor
 
     if request_type == 'get':
         response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, verify=False)
-    if body != {}:
-        jsonReq = json.dumps(body)
-        response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, data=jsonReq,verify=False)
-        
-    return response
-
-# def elasticRequest(protocol='https',host='localhost',port=9200,username='',password='',request_type = 'get',api_endpoint ='',):
-#     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-#     userpass = username + ':' + password
-
-#     # New authorization header with the JWT token we got
-#     requests_headers = {'Content-Type': 'application/json',
-#                         'Authorization': f'Basic {b64encode(basic_auth).decode()}'}
-
-#     if request_type == 'get':
-#         response = requests.get(f"{protocol}://{host}:{port}/{api_endpoint}", headers=requests_headers, verify=False)
     
-#     return response
+    return response
 
 
 def getApiInfo(protocol='https',host='localhost',port=55000,username='',password=''):

@@ -1,75 +1,101 @@
 import datetime
+from pyrsistent import field
 
-from siem_apis import siemRequest
+from sqlalchemy import null
+
+
+def generateRange(field,gt=None,lt=None,format=""):
+        rang = {"range":{
+            str(field):{}
+        }}
+        if gt != '' or gt is not None :
+            rang["range"][str(field)]["gte"]=gt
+        if lt != '' or lt is not None :
+            rang["range"][str(field)]["lte"]=lt
+        if format != ''  :
+            rang["range"][str(field)]["format"]=format
+        return rang
+
+# from siem_apis import siemRequest
 class ElasticQuery():
     def __init__(self):
         self.query = {}
         pass
-    
-    def dateFilter(self,startDate,endDate):
-        
-        try:
-            start = startDate
-            if start=='':
-                start = datetime.datetime.now() - datetime.timedelta(days=365)
-                start.strftime("%Y-%m-%dT%H:%M:%SZ")
-            
-            else:
-                start = start.strftime("%Y-%m-%dT%H:%M:%SZ")
-        except:
-            pass
-        try:
-            end = endDate
-            if end=='':
-                end = datetime.datetime.now()
-                end.strftime("%Y-%m-%dT%H:%M:%SZ")
-            
-            else:
-                end = end.strftime("%Y-%m-%dT%H:%M:%SZ")
-        except:
-            pass
-        
-        self.query = {
-                    "bool": {
-                        "must": [
-                        ],
-                    }
-                    }
 
+    def dateFilter(self,startDate,endDate):
+        start = startDate
+        if start=='':
+            start = "now-1y/y"
+        
+        else:
+            start += "+0300"
+
+        end = endDate
+        if end=='':
+            end = 'now'
+        else:
+            end += "+0300"
+        self.query = {"bool": {}}
+
+        format = "yyyy-MM-dd'T'HH:mm:ssZ"
         if start is not None and start != "":
-            self.query['bool']["filter"] = {
-                "range": {
-                    "date": {
-                        "gte": str(start),
-                        "lt": str(end),
-                        "format":"yyyy-MM-dd'T'HH:mm:ssZ"
-                    }
-                }
-            }
+            self.query['bool']["filter"] = [generateRange("date",str(start),str(end),format)]
 
     def addTerms(self,terms):
         for term in terms:
-            self.query["bool"]['must'].append({"term": {str(term['field'])+".keyword": term['value']}})
+            self.query["bool"]['filter'].append({"term": {str(term['field'])+".keyword": term['value']}})
 
-    def queryResponce(self,field,size):
+     
+
+    def addRange(self,ranges):
+        for rang in ranges:
+            self.query["bool"]['filter'].append(generateRange("date",rang["gte"],rang["lte"]))
+    def addAggs(self,aggs = {}):
+        self.aggs = {}
+        
+        
+        if aggs['interval'] != {} :
+            self.aggs = {"parentaggsdata": {"date_histogram": {}}}
+            self.aggs["parentaggsdata"]["date_histogram"]["field"]=aggs['interval']["field"]
+            try:
+                if aggs['interval']["size"] != "":
+                    self.aggs["parentaggsdata"]["date_histogram"]["interval"]=aggs['interval']["size"]
+            except:
+                self.aggs["parentaggsdata"]["date_histogram"]["interval"]="week"
+            self.aggs["parentaggsdata"]["date_histogram"]["format"]="yyyy-MM-dd"
+            if aggs["aggdata"] !={}:
+                self.aggs["parentaggsdata"]["aggs"]={"aggdata":{"terms":{}}}
+                self.aggs["parentaggsdata"]["aggs"]["aggdata"]["terms"]["field"]=aggs["aggdata"]["field"]
+                try:
+                    if aggs["aggdata"]["size"] != "":
+                        self.aggs["parentaggsdata"]["aggs"]["aggdata"]["terms"]["size"] = aggs["aggdata"]["size"]
+                except:
+                    pass
+
+        else:
+            if aggs["aggdata"] !={}:
+                self.aggs ={"aggdata":{"terms":{}}}
+                self.aggs["aggdata"]["terms"]["field"]=aggs["aggdata"]["field"]
+                try:
+                    if aggs["aggdata"]["size"] != "":
+                        self.aggs["aggdata"]["terms"]["size"] = aggs["aggdata"]["size"]
+                except:
+                    pass
+    def queryResponce(self,query_size):
         self.responce = {
-            "size":0,
+            "size":query_size,
             "query":self.query,
-            "aggs":{
-                "Count":{
-                    "terms": {
-                    "field": str(field)+".keyword",
-                    "size": size
-                }
-                }
-            }
+            "aggs": self.aggs
         }
-        pass
+        
     def queryBuilder(self,requestJson={}):
         self.requestJson = requestJson
         self.dateFilter(self.requestJson['date_range']['start'],self.requestJson['date_range']['end'])
         self.addTerms(self.requestJson['conditions'])
-        self.queryResponce(field=self.requestJson['field'],size=self.requestJson['size'])
+        self.addRange(self.requestJson['range'])
+        self.addAggs(aggs =self.requestJson["aggs"])
+        self.queryResponce(query_size=self.requestJson['query_size'])
+        
         print('------------------------------------')
         print(self.query)
         print('------------------------------------')
@@ -80,41 +106,67 @@ class ElasticQuery():
 obj = ElasticQuery()
 
 requestJ = {
+    "field": "agents",
+    "field_size": 100,
+    "date_range": {
+        "start": "",
+        "end": ""
+    },
+    "range": [
+        {
+            "field": "level",
+            "gte": "15",
+            "lte": 10
+        }
+    ],
+    "conditions": [
+        {
+            "field": "rule.description",
+            "value": [
+        "Registry Value Entry Added to the System",
+        "Registry Value Entry Deleted.",
+        "Registry Value Integrity Checksum Changed",
+        "Registry Key Integrity Checksum Changed",
+        "Registry Key Entry Added to the System"
+        ]
+        },
 
-        "field":"agents",
-        "date_range":{
-            "start":"",
-            "end":""
-                        },
-        "conditions":[
-            {"field":"d",
-             "value":"e"},
-            {"field":"f",
-             "value":"g"},
-            {"field":"h",
-             "value":"i"}
-                    ],
-        "size":100
+        {
+            "field": "f",
+            "value": "g"
+        },
+        {
+            "field": "h",
+            "value": "i"
+        }
+    ],
+    "query_size": 100,
+    "query_type": "_count or _search",
+    "aggs": {
+        "interval": {
+            "field": "timestamp",
+            "size": "day"
+        },
+        "aggdata": {
+            "field": "rule.description",
+        }
+    }
 }
 
 obj.queryBuilder(requestJson=requestJ)
-# from siem_backend.dev import *
-js = {
-    "size": 100,
-    "sort": [
-        {
-            "date": {
-                "order": "asc"
+
+aggs= {
+    "parentaggsdata": {
+        "date_histogram": {
+                "field": "timestamp",
+                "interval": "interval",
+                "format": "yyyy-MM-dd"
+            },
+                "aggs": {
+                "aggdata": {
+                "terms": { "field": "syscheck.event" }
+                }
             }
         }
-    ]
-}
-end_point = '/wazuh-alerts-*/_search?pretty=true'
-data = siemRequest(protocol='https',host='192.168.42.198',port=9200,username='wazuh',password='wazuh',request_type = 'get',api_endpoint =end_point , body=js)
-# siemRequest(host=dev_host,username=dev_username,password=dev_password,api_endpoint=endd_point)
-data = data.json()
-# elasticUrl + "/wazuh-alerts-*/_search?pretty=true",
-#                     HttpMethod.POST,
-#                     entity,
-#                     Object.class
-# https://192.168.43.198:9200/
+    }
+
