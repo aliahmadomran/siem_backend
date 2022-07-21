@@ -1,4 +1,6 @@
 import datetime
+from pickle import FALSE
+from numpy import False_
 from pyrsistent import field
 
 from sqlalchemy import null
@@ -49,7 +51,7 @@ class ElasticQuery():
 
     def addRange(self,ranges):
         for rang in ranges:
-            self.query["bool"]['filter'].append(generateRange("date",rang["gte"],rang["lte"]))
+            self.query["bool"]['filter'].append(generateRange(rang["field"],rang["gte"],rang["lte"]))
     def addAggs(self,aggs = {}):
         self.aggs = {}
         
@@ -81,20 +83,33 @@ class ElasticQuery():
                         self.aggs["aggdata"]["terms"]["size"] = aggs["aggdata"]["size"]
                 except:
                     pass
-    def queryResponce(self,query_size):
-        self.responce = {
-            "size":query_size,
-            "query":self.query,
-            "aggs": self.aggs
-        }
-        
+            
+    def queryResponce(self,query_size=100,paging={"check":False}):
+        if paging['check']:
+            self.pagination(paging)
+        else:
+            self.normalResponce(query_size)
+    
+    def normalResponce(self,query_size):
+        self.responce={}
+        self.responce["size"]=query_size
+        self.responce["query"]=self.query
+        self.responce['aggs']=self.aggs
+    
+    def pagination(self,paging):
+        self.responce={}
+        self.responce["from"]=paging["page"]*paging["page_size"]
+        self.responce["size"]=paging["page_size"]
+        self.responce["query"]=self.query
+        self.responce['aggs']=self.aggs
+
     def queryBuilder(self,requestJson={}):
         self.requestJson = requestJson
         self.dateFilter(self.requestJson['date_range']['start'],self.requestJson['date_range']['end'])
         self.addTerms(self.requestJson['conditions'])
         self.addRange(self.requestJson['range'])
         self.addAggs(aggs =self.requestJson["aggs"])
-        self.queryResponce(query_size=self.requestJson['query_size'])
+        self.queryResponce(query_size=self.requestJson['query_size'],paging=self.requestJson["paging"])
         
         print('------------------------------------')
         print(self.query)
@@ -140,7 +155,7 @@ requestJ = {
             "value": "i"
         }
     ],
-    "query_size": 100,
+    "query_size": 17,
     "query_type": "_count or _search",
     "aggs": {
         "interval": {
@@ -150,23 +165,8 @@ requestJ = {
         "aggdata": {
             "field": "rule.description",
         }
-    }
+    },
+    "paging":{"check":False,"page":5,"page_size":10}
 }
 
 obj.queryBuilder(requestJson=requestJ)
-
-aggs= {
-    "parentaggsdata": {
-        "date_histogram": {
-                "field": "timestamp",
-                "interval": "interval",
-                "format": "yyyy-MM-dd"
-            },
-                "aggs": {
-                "aggdata": {
-                "terms": { "field": "syscheck.event" }
-                }
-            }
-        }
-    }
-
