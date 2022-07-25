@@ -1,24 +1,15 @@
-import datetime
-from pickle import FALSE
-from numpy import False_
-from pyrsistent import field
-
-from sqlalchemy import null
-
-
-def generateRange(field,gt=None,lt=None,format=""):
+def generateRange(field,gt,lt,format=""):
         rang = {"range":{
             str(field):{}
         }}
-        if gt != '' or gt is not None :
+        if gt != '' and gt != None :
             rang["range"][str(field)]["gte"]=gt
-        if lt != '' or lt is not None :
+        if lt != '' and lt != None :
             rang["range"][str(field)]["lte"]=lt
         if format != ''  :
             rang["range"][str(field)]["format"]=format
         return rang
 
-# from siem_apis import siemRequest
 class ElasticQuery():
     def __init__(self):
         self.query = {}
@@ -27,7 +18,7 @@ class ElasticQuery():
     def dateFilter(self,startDate,endDate):
         start = startDate
         if start=='':
-            start = "now-1y/y"
+            start = "now-10d/d"
         
         else:
             start += "+0300"
@@ -41,7 +32,7 @@ class ElasticQuery():
 
         format = "yyyy-MM-dd'T'HH:mm:ssZ"
         if start is not None and start != "":
-            self.query['bool']["filter"] = [generateRange("date",str(start),str(end),format)]
+            self.query['bool']["filter"] = [generateRange("timestamp",str(start),str(end),format)]
 
     def addTerms(self,terms):
         for term in terms:
@@ -53,10 +44,11 @@ class ElasticQuery():
         for rang in ranges:
             self.query["bool"]['filter'].append(generateRange(rang["field"],rang["gte"],rang["lte"]))
     def addAggs(self,aggs = {}):
-        self.aggs = {}
+        
         
         
         if aggs['interval'] != {} :
+            self.aggs = {}
             self.aggs = {"parentaggsdata": {"date_histogram": {}}}
             self.aggs["parentaggsdata"]["date_histogram"]["field"]=aggs['interval']["field"]
             try:
@@ -75,6 +67,7 @@ class ElasticQuery():
                     pass
 
         else:
+            self.aggs = {}
             if aggs["aggdata"] !={}:
                 self.aggs ={"aggdata":{"terms":{}}}
                 self.aggs["aggdata"]["terms"]["field"]=aggs["aggdata"]["field"]
@@ -92,7 +85,8 @@ class ElasticQuery():
     
     def normalResponce(self,query_size):
         self.responce={}
-        self.responce["size"]=query_size
+        if query_size is not None:
+            self.responce["size"]=query_size
         self.responce["query"]=self.query
         self.responce['aggs']=self.aggs
     
@@ -106,16 +100,22 @@ class ElasticQuery():
     def queryBuilder(self,requestJson={}):
         self.requestJson = requestJson
         self.dateFilter(self.requestJson['date_range']['start'],self.requestJson['date_range']['end'])
-        self.addTerms(self.requestJson['conditions'])
-        self.addRange(self.requestJson['range'])
-        self.addAggs(aggs =self.requestJson["aggs"])
-        self.queryResponce(query_size=self.requestJson['query_size'],paging=self.requestJson["paging"])
-        
-        print('------------------------------------')
-        print(self.query)
-        print('------------------------------------')
-        print(self.responce)
-        print('------------------------------------')
+        try:
+            self.addTerms(self.requestJson['conditions'])
+        except:
+            pass
+        try:
+            self.addRange(self.requestJson['range'])
+        except:
+            pass
+        try:
+            self.addAggs(aggs =self.requestJson["aggs"])
+        except:
+            pass
+        try:
+            self.queryResponce(query_size=self.requestJson['query_size'],paging=self.requestJson["paging"])
+        except:
+            pass
         
 
 obj = ElasticQuery()
@@ -169,4 +169,4 @@ requestJ = {
     "paging":{"check":False,"page":5,"page_size":10}
 }
 
-obj.queryBuilder(requestJson=requestJ)
+# obj.queryBuilder(requestJson=requestJ)
