@@ -1,6 +1,7 @@
 import json
 from network.siem_apis import elasticRequest
 from network.queryBuilder import ElasticQuery
+
 def get_alerts_service(startDate,endDate,level):
     obj = ElasticQuery()
     details = {

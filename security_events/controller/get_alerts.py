@@ -1,4 +1,6 @@
-from get_alerts import  get_alerts_service
+
+
+from ..services.get_alerts import get_alerts_service
 
 
 def get_alerts_conrtoller(params):
