@@ -77,7 +77,7 @@ class ElasticQuery():
                 except:
                     pass
             
-    def queryResponce(self,query_size=100,paging={"check":False}):
+    def queryResponce(self,query_size,paging={"check":False}):
         if paging['check']:
             self.pagination(paging)
         else:
@@ -121,8 +121,6 @@ class ElasticQuery():
 obj = ElasticQuery()
 
 requestJ = {
-    "field": "agents",
-    "field_size": 100,
     "date_range": {
         "start": "",
         "end": ""
